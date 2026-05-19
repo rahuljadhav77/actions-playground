@@ -1,0 +1,17 @@
+# Example 1: Basic Workflow
+# This workflow runs on every push to the main branch and prints a message.
+
+name: Basic Workflow
+ 
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print a message
+        run: echo "Hello, GitHub Actions!"

@@ -1,0 +1,20 @@
+# Example 2: Run on Pull Request
+# This workflow runs whenever a pull request is opened or synchronized.
+
+name: Pull Request Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print a message
+        run: echo "Pull request workflow triggered!"
