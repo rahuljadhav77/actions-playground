@@ -1,0 +1,16 @@
+# Example 3: Scheduled Workflow
+# This workflow runs on a schedule (every day at midnight UTC).
+
+name: Scheduled Workflow
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Every day at midnight UTC
+
+jobs:
+  scheduled-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print a message
+        run: echo "Scheduled workflow triggered!"

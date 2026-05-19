@@ -1,0 +1,19 @@
+# Example 4: Using Environment Variables
+# This workflow demonstrates how to use environment variables in GitHub Actions.
+
+name: Environment Variable Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  use-env-vars:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print environment variable
+        env:
+          MY_VARIABLE: HelloWorld
+        run: echo "The value of MY_VARIABLE is $MY_VARIABLE"
