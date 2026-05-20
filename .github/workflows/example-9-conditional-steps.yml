@@ -1,0 +1,33 @@
+# Example 9: Conditional Steps
+# This workflow demonstrates how to use conditional logic in steps using 'if' statements.
+
+name: Conditional Steps Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  conditional-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run on main branch
+        if: github.ref == 'refs/heads/main'
+        run: echo "This runs only on the main branch"
+
+      - name: Run on weekdays
+        if: github.event.schedule == '0 0 * * 1-5'
+        run: echo "This runs only on weekdays"
+
+      - name: Run on success
+        if: success()
+        run: echo "All previous steps succeeded"
+
+      - name: Run on failure
+        if: failure()
+        run: echo "At least one previous step failed"
