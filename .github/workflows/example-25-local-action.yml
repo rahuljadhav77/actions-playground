@@ -1,0 +1,20 @@
+﻿# Example 25: Local Action
+# This workflow demonstrates using a local action from the repo.
+
+name: Local Action Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  local-action-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Run local composite action
+        uses: ./.github/actions/local-action
