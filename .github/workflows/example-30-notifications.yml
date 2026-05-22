@@ -1,0 +1,20 @@
+﻿# Example 30: Notifications
+# This workflow demonstrates sending notifications after workflow completion.
+
+name: Notifications Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Notify on completion
+        run: echo "Send notification to Slack, email, or other services here."
