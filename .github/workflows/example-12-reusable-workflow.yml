@@ -1,0 +1,19 @@
+# Example 12: Reusable Workflow
+# This workflow demonstrates how to call a reusable workflow from another workflow.
+
+name: Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      greeting:
+        required: true
+        type: string
+
+jobs:
+  reusable-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print greeting
+        run: echo "${{ inputs.greeting }} from the reusable workflow!"
