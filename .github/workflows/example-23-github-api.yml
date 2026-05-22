@@ -1,0 +1,27 @@
+﻿# Example 23: GitHub API
+# This workflow demonstrates calling the GitHub API via an action.
+
+name: GitHub API Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  github-api-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Get repository metadata
+        uses: octokit/request-action@v4
+        with:
+          route: GET /repos/${{ github.repository }}
+          mediaType: |
+            application/vnd.github.v3+json
+
+      - name: Print repository name
+        run: echo "Repository: ${{ github.repository }}"
