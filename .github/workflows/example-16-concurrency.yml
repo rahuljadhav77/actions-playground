@@ -1,0 +1,26 @@
+﻿# Example 16: Concurrency
+# This workflow demonstrates concurrency control to avoid overlapping runs.
+
+name: Concurrency Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: concurrency-example
+  cancel-in-progress: true
+
+jobs:
+  concurrency-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Simulate work
+        run: |
+          echo "Running concurrency example"
+          sleep 10
