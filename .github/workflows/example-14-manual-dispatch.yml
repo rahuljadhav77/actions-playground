@@ -1,0 +1,20 @@
+﻿# Example 14: Manual Dispatch
+# This workflow demonstrates the workflow_dispatch event for manual runs.
+
+name: Manual Dispatch Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+
+jobs:
+  manual-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print selected environment
+        run: echo "Deployment environment: ${{ github.event.inputs.environment }}"
