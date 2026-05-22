@@ -1,0 +1,29 @@
+﻿# Example 20: Workflow Outputs
+# This workflow demonstrates job outputs and consuming them in later jobs.
+
+name: Workflow Outputs
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-output:
+    runs-on: ubuntu-latest
+
+    outputs:
+      greeting: ${{ steps.set-greeting.outputs.greeting }}
+
+    steps:
+      - name: Set greeting
+        id: set-greeting
+        run: echo "::set-output name=greeting::Hello from the generator"
+
+  consume-output:
+    runs-on: ubuntu-latest
+    needs: generate-output
+
+    steps:
+      - name: Print greeting
+        run: echo "Greeting: ${{ needs.generate-output.outputs.greeting }}"
