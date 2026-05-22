@@ -1,0 +1,24 @@
+﻿# Example 26: Permissions
+# This workflow demonstrates setting permissions for the job.
+
+name: Permissions Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  permissions-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print permissions
+        run: echo "Permissions are set for contents=read and id-token=write"
