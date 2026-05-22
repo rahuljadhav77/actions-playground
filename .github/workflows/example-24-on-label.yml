@@ -1,0 +1,20 @@
+﻿# Example 24: On Label
+# This workflow demonstrates running when a label is added to an issue or PR.
+
+name: On Label Workflow
+
+on:
+  issues:
+    types: [labeled]
+  pull_request:
+    types: [labeled]
+
+jobs:
+  label-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Print label name
+        run: |
+          echo "Label added: ${{ github.event.label.name }}"
+          echo "Event type: ${{ github.event_name }}"
