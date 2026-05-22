@@ -1,0 +1,23 @@
+﻿# Example 15: Paths Filter
+# This workflow demonstrates how to run only when specific paths change.
+
+name: Paths Filter Workflow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'README.md'
+
+jobs:
+  path-filter-job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print message
+        run: echo "This workflow runs only when src/ or README.md changes."
