@@ -1,0 +1,21 @@
+﻿# Example 29: Approval Flow
+# This workflow demonstrates manual approval using environment protection rules.
+
+name: Approval Flow Workflow
+
+on:
+  workflow_dispatch:
+
+jobs:
+  approval-job:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://example.com
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Simulate deployment
+        run: echo "Await environment approval before running this job."
