@@ -1,0 +1,28 @@
+﻿# Example 19: Matrix Include
+# This workflow demonstrates additional matrix entries using include.
+
+name: Matrix Include Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16, 18]
+        include:
+          - node-version: 16
+            environment: staging
+          - node-version: 18
+            environment: production
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Print matrix values
+        run: echo "Node version: ${{ matrix.node-version }}, environment: ${{ matrix.environment }}"
