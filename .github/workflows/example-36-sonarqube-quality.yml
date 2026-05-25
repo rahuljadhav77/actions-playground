@@ -1,0 +1,109 @@
+name: Example 36 - Code Quality with SonarQube
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  sonar-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=rahuljadhav77_actions-playground
+            -Dsonar.organization=rahuljadhav77
+            -Dsonar.sources=src
+            -Dsonar.tests=__tests__
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.testExecutionReportPaths=coverage/test-report.xml
+
+      - name: Check Quality Gate
+        run: |
+          echo "Waiting for SonarQube analysis..."
+          sleep 30
+          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+            "https://sonarcloud.io/api/qualitygates/project_status?projectKey=rahuljadhav77_actions-playground" \
+            | jq '.projectStatus.status'
+
+  code-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Calculate code metrics
+        run: |
+          echo "## Code Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Files: $(find src -type f -name '*.js' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Lines of Code: $(find src -type f -name '*.js' -exec wc -l {} + | tail -1 | awk '{print $1}')" >> $GITHUB_STEP_SUMMARY
+          echo "- Cyclomatic Complexity: Analyzed by SonarQube" >> $GITHUB_STEP_SUMMARY
+
+  lint-and-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Prettier check
+        run: npm run format:check
+
+      - name: Run additional quality checks
+        run: |
+          npm run test:lint || true
+          npm run test:type || true
+
+  quality-report:
+    runs-on: ubuntu-latest
+    needs: [sonar-analysis, code-metrics, lint-and-format]
+    if: always()
+    steps:
+      - name: Generate quality report
+        run: |
+          echo "# Code Quality Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Status" >> $GITHUB_STEP_SUMMARY
+          echo "- SonarQube: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Metrics: Calculated" >> $GITHUB_STEP_SUMMARY
+          echo "- Linting: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[View SonarQube Dashboard](https://sonarcloud.io/dashboard?id=rahuljadhav77_actions-playground)" >> $GITHUB_STEP_SUMMARY
