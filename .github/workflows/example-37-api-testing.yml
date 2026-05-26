@@ -1,0 +1,134 @@
+name: Example 37 - API Testing with Postman/REST Client
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'tests/api/**'
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    services:
+      api-server:
+        image: node:18
+        options: >-
+          --health-cmd="curl -f http://localhost:3000/health || exit 1"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3000:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start API server
+        run: npm run dev &
+        env:
+          NODE_ENV: test
+
+      - name: Wait for API to be ready
+        run: |
+          for i in {1..30}; do
+            curl -f http://localhost:3000/health && break
+            echo "Waiting for API ($i/30)..."
+            sleep 2
+          done
+
+      - name: Run Postman tests
+        uses: matt-ball/newman-action@master
+        with:
+          collection: ./tests/postman/collection.json
+          environment: ./tests/postman/environment.json
+          reporters: cli,json
+          reporter-json-export: 'postman-results.json'
+
+      - name: Run REST client tests
+        run: npm run test:api
+
+      - name: Run E2E API tests
+        run: |
+          npm run test:api:e2e -- \
+            --baseUrl=http://localhost:3000 \
+            --verbose
+
+      - name: Test endpoints
+        run: |
+          echo "Testing GET /api/users"
+          curl -v http://localhost:3000/api/users
+
+          echo "Testing POST /api/users"
+          curl -X POST http://localhost:3000/api/users \
+            -H "Content-Type: application/json" \
+            -d '{"name":"Test User"}'
+
+          echo "Testing GET /api/health"
+          curl -v http://localhost:3000/api/health
+
+      - name: Performance testing with k6
+        run: |
+          npm run test:performance || true
+
+      - name: Load testing
+        uses: grafana/k6-action@v0.3.0
+        with:
+          filename: tests/load-test.js
+          cloud: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-results
+          path: |
+            postman-results.json
+            test-results/
+            k6-results/
+
+      - name: Comment PR with test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const results = JSON.parse(fs.readFileSync('postman-results.json', 'utf8'));
+
+            const comment = `## API Test Results
+            - Total Tests: ${results.run.stats.tests.total}
+            - Passed: ${results.run.stats.tests.total - results.run.failures.length}
+            - Failed: ${results.run.failures.length}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Fail if tests failed
+        if: failure()
+        run: exit 1
+
+  test-report:
+    runs-on: ubuntu-latest
+    needs: api-tests
+    if: always()
+    steps:
+      - name: Generate report
+        run: |
+          echo "# API Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Results](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
