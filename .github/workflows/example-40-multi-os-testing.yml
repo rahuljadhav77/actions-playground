@@ -1,0 +1,186 @@
+name: Example 40 - Multi-OS Testing (Windows, macOS, Linux)
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly
+
+jobs:
+  test-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['18', '20', '22']
+        include:
+          - os: ubuntu-latest
+            artifact-name: app-linux
+          - os: windows-latest
+            artifact-name: app-windows.exe
+          - os: macos-latest
+            artifact-name: app-macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build project
+        run: npm run build
+
+      - name: Generate coverage report
+        run: npm run test:coverage
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage/lcov.info
+          flags: ${{ runner.os }}-node${{ matrix.node-version }}
+          name: codecov-${{ matrix.os }}-${{ matrix.node-version }}
+
+  platform-specific-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Linux-specific tests
+        if: runner.os == 'Linux'
+        run: |
+          npm run test:linux
+          echo "✅ Linux tests passed"
+
+      - name: Run macOS-specific tests
+        if: runner.os == 'macOS'
+        run: |
+          npm run test:macos
+          echo "✅ macOS tests passed"
+
+      - name: Run Windows-specific tests
+        if: runner.os == 'Windows'
+        run: |
+          npm run test:windows
+          echo "✅ Windows tests passed"
+
+  build-matrix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            build-cmd: npm run build:linux
+          - os: windows-latest
+            build-cmd: npm run build:windows
+          - os: macos-latest
+            build-cmd: npm run build:macos
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build for ${{ runner.os }}
+        run: ${{ matrix.build-cmd }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ runner.os }}
+          path: dist/
+
+  integration-tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start test server
+        run: npm run dev &
+        timeout-minutes: 1
+
+      - name: Wait for server
+        run: |
+          timeout 30 bash -c 'until curl -f http://localhost:3000/health; do sleep 1; done' || true
+
+      - name: Run integration tests
+        run: npm run test:integration
+
+      - name: Cleanup
+        if: always()
+        run: pkill -f "npm run dev" || true
+
+  cross-platform-summary:
+    runs-on: ubuntu-latest
+    needs: [test-matrix, platform-specific-tests, build-matrix, integration-tests]
+    if: always()
+    steps:
+      - name: Generate test summary
+        run: |
+          echo "# Cross-Platform Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- Ubuntu (Linux)" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Node.js Versions Tested" >> $GITHUB_STEP_SUMMARY
+          echo "- Node 18" >> $GITHUB_STEP_SUMMARY
+          echo "- Node 20" >> $GITHUB_STEP_SUMMARY
+          echo "- Node 22" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Status" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All matrix jobs completed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts/
+
+      - name: Generate artifact report
+        run: |
+          echo "## Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux builds" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows builds" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS builds" >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if any tests failed
+        if: failure()
+        run: |
+          echo "❌ Some tests failed"
+          exit 1
