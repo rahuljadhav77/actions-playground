@@ -1,0 +1,145 @@
+name: Example 44 - Advanced Approval & Permissions
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      approval_required:
+        description: 'Require approval'
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR requirements
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            let approved = true;
+            let reason = [];
+
+            if (!pr.title.match(/^(feat|fix|docs|style|refactor|test|chore):/)) {
+              approved = false;
+              reason.push('❌ PR title must follow conventional commits');
+            }
+
+            if (pr.body.length < 10) {
+              approved = false;
+              reason.push('❌ PR description is too short');
+            }
+
+            core.setOutput('approved', approved);
+            core.setOutput('reasons', reason.join('\n'));
+
+      - name: Comment on PR
+        if: steps.check.outputs.approved == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## PR Review\n\n${{ steps.check.outputs.reasons }}`
+            });
+
+  check-approvals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get PR reviews
+        id: reviews
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+
+            const approvals = reviews.data.filter(r => r.state === 'APPROVED').length;
+            const rejections = reviews.data.filter(r => r.state === 'CHANGES_REQUESTED').length;
+
+            core.setOutput('approvals', approvals);
+            core.setOutput('rejections', rejections);
+
+      - name: Check if approved
+        run: |
+          APPROVALS=${{ steps.reviews.outputs.approvals }}
+          REJECTIONS=${{ steps.reviews.outputs.rejections }}
+
+          echo "Approvals: $APPROVALS"
+          echo "Rejections: $REJECTIONS"
+
+          if [ $REJECTIONS -gt 0 ]; then
+            echo "❌ PR has requested changes"
+            exit 1
+          fi
+
+          if [ $APPROVALS -lt 1 ]; then
+            echo "⚠️ PR needs at least 1 approval"
+            exit 1
+          fi
+
+          echo "✅ PR meets approval requirements"
+
+  protected-deployment:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://example.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for manual approval
+        run: |
+          echo "⏳ Waiting for manual approval..."
+          echo "This step requires manual approval via GitHub Environment Protection Rules"
+
+      - name: Deploy to production
+        run: |
+          echo "🚀 Deploying to production..."
+          echo "This workflow was approved by: ${{ github.actor }}"
+
+  audit-trail:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create audit log
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const log = {
+              timestamp: new Date().toISOString(),
+              actor: context.actor,
+              event: context.eventName,
+              ref: context.ref,
+              runId: context.runId,
+              status: '${{ job.status }}'
+            };
+
+            console.log(JSON.stringify(log, null, 2));
+
+      - name: Post approval summary
+        run: |
+          echo "# Approval & Audit Trail" >> $GITHUB_STEP_SUMMARY
+          echo "- Requested by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Timestamp: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- Environment: production" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: Awaiting manual approval" >> $GITHUB_STEP_SUMMARY
