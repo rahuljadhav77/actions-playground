@@ -1,0 +1,118 @@
+name: Example 42 - Monitoring & Workflow Logging
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/30 * * * *'
+
+jobs:
+  workflow-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup monitoring
+        run: |
+          echo "Workflow Run ID: ${{ github.run_id }}"
+          echo "Workflow Attempt: ${{ github.run_attempt }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event: ${{ github.event_name }}"
+
+      - name: Create detailed logs
+        run: |
+          mkdir -p logs
+          {
+            echo "=== Workflow Execution Log ==="
+            echo "Start Time: $(date)"
+            echo "Runner OS: ${{ runner.os }}"
+            echo "Runner Arch: ${{ runner.arch }}"
+            echo "Runner Name: ${{ runner.name }}"
+            echo ""
+            echo "=== Repository Info ==="
+            echo "Repository: ${{ github.repository }}"
+            echo "Ref: ${{ github.ref }}"
+            echo "SHA: ${{ github.sha }}"
+            echo ""
+            echo "=== Event Details ==="
+            echo "Event Name: ${{ github.event_name }}"
+            echo "Trigger Actor: ${{ github.actor }}"
+            echo ""
+            echo "End Time: $(date)"
+          } > logs/workflow.log
+
+      - name: Upload logs as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workflow-logs
+          path: logs/
+          retention-days: 90
+
+      - name: Publish job summary
+        run: |
+          echo "# Workflow Execution Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Run ID | ${{ github.run_id }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Attempt | ${{ github.run_attempt }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Event | ${{ github.event_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Actor | ${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | ✅ In Progress |" >> $GITHUB_STEP_SUMMARY
+
+  performance-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Measure build time
+        run: |
+          START_TIME=$(date +%s%N | cut -b1-13)
+          npm ci
+          npm run build
+          END_TIME=$(date +%s%N | cut -b1-13)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          echo "Build Time: ${BUILD_TIME}ms"
+          echo "BUILD_TIME=${BUILD_TIME}" >> $GITHUB_ENV
+
+      - name: Measure test time
+        run: |
+          START_TIME=$(date +%s%N | cut -b1-13)
+          npm test
+          END_TIME=$(date +%s%N | cut -b1-13)
+          TEST_TIME=$((END_TIME - START_TIME))
+          echo "Test Time: ${TEST_TIME}ms"
+          echo "TEST_TIME=${TEST_TIME}" >> $GITHUB_ENV
+
+      - name: Post metrics
+        run: |
+          echo "# Performance Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Build Time: ${{ env.BUILD_TIME }}ms" >> $GITHUB_STEP_SUMMARY
+          echo "- Test Time: ${{ env.TEST_TIME }}ms" >> $GITHUB_STEP_SUMMARY
+
+  failure-notifications:
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Log failure
+        run: |
+          echo "Workflow failed!"
+          echo "Failure occurred at: $(date)"
+          echo "Run URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  workflow-summary:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [workflow-monitoring, performance-metrics]
+    steps:
+      - name: Generate final report
+        run: |
+          echo "# Final Workflow Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Completed at: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- [View Logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
