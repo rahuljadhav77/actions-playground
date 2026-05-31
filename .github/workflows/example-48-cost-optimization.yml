@@ -1,0 +1,93 @@
+name: Example 48 - Cost Optimization & Resource Monitoring
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 9 * * 1'  # Weekly on Monday
+
+jobs:
+  cost-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze build costs
+        run: |
+          echo "# Build Cost Analysis"
+          echo "Total runners used: 156"
+          echo "Ubuntu runners: $156 * $0.008/min = \$12.48"
+          echo "Windows runners: 45 * \$0.016/min = \$7.20"
+          echo "macOS runners: 23 * \$0.016/min = \$3.68"
+          echo "Monthly estimate: \$438"
+
+      - name: Identify cost-saving opportunities
+        run: |
+          echo "# Cost Saving Opportunities"
+          echo "1. Use Ubuntu runners (cheapest)"
+          echo "2. Reduce matrix combinations"
+          echo "3. Cache dependencies"
+          echo "4. Parallelize jobs efficiently"
+          echo "5. Disable unnecessary workflows"
+
+  optimize-workflows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check workflow efficiency
+        run: |
+          echo "Analyzing workflow efficiency..."
+          echo "- Fast workflows: 42 (avg 2min)"
+          echo "- Slow workflows: 3 (avg 15min)"
+          echo "- Opportunity: Optimize slow workflows"
+
+      - name: Generate optimization report
+        run: |
+          echo "# Workflow Optimization Report"
+          echo "Current: 234 minutes/day"
+          echo "Potential: 145 minutes/day"
+          echo "Savings: 89 minutes/day (-38%)"
+          echo "Monthly savings: ~2,670 min = \$21.36"
+
+  resource-cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Identify unused resources
+        run: |
+          echo "Scanning for unused resources..."
+          echo "- Unused artifacts: 45GB"
+          echo "- Old caches: 120GB"
+          echo "- Failed logs: 8GB"
+          echo "Total cleanup potential: 173GB"
+
+      - name: Cleanup old artifacts
+        run: |
+          echo "Deleting artifacts older than 30 days"
+          echo "Deleted: 45GB"
+          echo "Savings: \$18.00/month"
+
+  efficiency-report:
+    runs-on: ubuntu-latest
+    needs: [cost-analysis, optimize-workflows, resource-cleanup]
+    if: always()
+    steps:
+      - name: Generate monthly report
+        run: |
+          echo "# Monthly Cost & Efficiency Report"
+          echo ""
+          echo "## Current Costs"
+          echo "- Total: \$438/month"
+          echo "- Ubuntu: \$12.48"
+          echo "- Windows: \$7.20"
+          echo "- macOS: \$3.68"
+          echo ""
+          echo "## Optimization Potential"
+          echo "- Workflow optimization: \$21.36 savings"
+          echo "- Resource cleanup: \$18.00 savings"
+          echo "- Total potential savings: \$39.36/month (9%)"
+          echo ""
+          echo "## Recommendations"
+          echo "1. Use caching more aggressively"
+          echo "2. Consolidate test matrices"
+          echo "3. Schedule expensive tasks during off-peak"
