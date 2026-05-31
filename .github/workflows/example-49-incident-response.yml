@@ -1,0 +1,126 @@
+name: Example 49 - Incident Response & Hotfix Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: 'Incident severity'
+        required: true
+        type: choice
+        options:
+          - critical
+          - high
+          - medium
+          - low
+
+      description:
+        description: 'Incident description'
+        required: true
+        type: string
+
+jobs:
+  incident-triage:
+    runs-on: ubuntu-latest
+    outputs:
+      incident-id: ${{ steps.triage.outputs.id }}
+    steps:
+      - name: Create incident ID
+        id: triage
+        run: |
+          INCIDENT_ID="INC-${{ github.run_number }}"
+          echo "id=$INCIDENT_ID" >> $GITHUB_OUTPUT
+          echo "Incident created: $INCIDENT_ID"
+
+      - name: Log incident details
+        run: |
+          echo "Severity: ${{ github.event.inputs.severity }}"
+          echo "Description: ${{ github.event.inputs.description }}"
+          echo "Time: $(date)"
+          echo "Responder: ${{ github.actor }}"
+
+      - name: Notify incident channel
+        run: |
+          echo "📢 Incident notification sent to #incidents"
+          echo "Severity: ${{ github.event.inputs.severity }}"
+
+  hotfix-preparation:
+    runs-on: ubuntu-latest
+    needs: incident-triage
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Create hotfix branch
+        run: |
+          BRANCH="hotfix/${{ needs.incident-triage.outputs.incident-id }}"
+          echo "Creating branch: $BRANCH"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+  emergency-deployment:
+    needs: hotfix-preparation
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy hotfix to production
+        run: |
+          echo "🚨 Emergency deployment in progress"
+          echo "Incident: ${{ needs.incident-triage.outputs.incident-id }}"
+          echo "Severity: ${{ github.event.inputs.severity }}"
+
+      - name: Immediate health check
+        run: |
+          for i in {1..5}; do
+            echo "Health check $i..."
+            sleep 5
+          done
+          echo "✅ System healthy"
+
+  incident-communication:
+    runs-on: ubuntu-latest
+    needs: [incident-triage, emergency-deployment]
+    if: always()
+    steps:
+      - name: Update incident status
+        run: |
+          echo "Incident: ${{ needs.incident-triage.outputs.incident-id }}"
+          echo "Status: In Progress"
+          echo "Severity: ${{ github.event.inputs.severity }}"
+          echo "Last Update: $(date)"
+
+      - name: Post incident timeline
+        run: |
+          echo "## Incident Timeline"
+          echo "- 10:30 AM: Incident detected"
+          echo "- 10:32 AM: Hotfix deployed"
+          echo "- 10:35 AM: System restored"
+          echo "- Duration: 5 minutes"
+
+  post-incident-review:
+    runs-on: ubuntu-latest
+    needs: incident-triage
+    if: always()
+    steps:
+      - name: Schedule post-mortem
+        run: |
+          echo "Post-mortem scheduled for 24 hours"
+          echo "Incident: ${{ needs.incident-triage.outputs.incident-id }}"
+
+      - name: Create incident report
+        run: |
+          echo "# Incident Report"
+          echo "ID: ${{ needs.incident-triage.outputs.incident-id }}"
+          echo "Severity: ${{ github.event.inputs.severity }}"
+          echo "Description: ${{ github.event.inputs.description }}"
+          echo "Duration: < 10 minutes"
+          echo "Resolution: Hotfix deployed"
+          echo "Status: RESOLVED"
