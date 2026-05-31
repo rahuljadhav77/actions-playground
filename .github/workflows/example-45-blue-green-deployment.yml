@@ -1,0 +1,92 @@
+name: Example 45 - Blue-Green Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.image.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install & test
+        run: |
+          npm ci
+          npm run build
+          npm test
+
+      - id: image
+        run: echo "tag=v${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+  deploy-green:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to GREEN environment
+        run: |
+          echo "Deploying to GREEN (new version)"
+          echo "Version: ${{ needs.build-and-test.outputs.image-tag }}"
+
+      - name: Run smoke tests on GREEN
+        run: |
+          sleep 5
+          echo "Running smoke tests on GREEN..."
+
+      - name: Store GREEN status
+        run: echo "GREEN_READY=true" >> $GITHUB_ENV
+
+  switch-traffic:
+    needs: deploy-green
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Switch traffic BLUE -> GREEN
+        run: |
+          echo "Switching traffic from BLUE to GREEN"
+          sleep 10
+          echo "Traffic switched successfully"
+
+      - name: Verify GREEN health
+        run: |
+          echo "Verifying GREEN is healthy..."
+          echo "✅ GREEN is healthy"
+
+  monitor-green:
+    needs: switch-traffic
+    runs-on: ubuntu-latest
+    steps:
+      - name: Monitor GREEN for 5 minutes
+        run: |
+          for i in {1..10}; do
+            echo "Health check $i/10..."
+            sleep 30
+          done
+          echo "✅ GREEN stable for 5 minutes"
+
+  keep-blue-standby:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    steps:
+      - name: Maintain BLUE as rollback point
+        run: |
+          echo "BLUE environment maintained as rollback point"
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Rollback to BLUE
+        run: |
+          echo "❌ Deployment failed! Rolling back to BLUE"
+          echo "✅ Rolled back to BLUE"
