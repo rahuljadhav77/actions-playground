@@ -1,0 +1,87 @@
+name: Example 46 - Canary Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      canary_percentage:
+        description: 'Traffic percentage for canary'
+        required: true
+        default: '10'
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Build & test
+        run: npm ci && npm run build && npm test
+
+      - id: version
+        run: echo "tag=canary-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+  deploy-canary:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy canary version
+        env:
+          CANARY_TRAFFIC: ${{ github.event.inputs.canary_percentage || '10' }}
+        run: |
+          echo "Deploying canary: ${{ needs.build.outputs.version }}"
+          echo "Traffic allocation: ${CANARY_TRAFFIC}%"
+
+      - name: Monitor canary metrics
+        run: |
+          echo "Monitoring canary deployment..."
+          for i in {1..5}; do
+            echo "Minute $i - Error rate: 0.5%, Latency: 120ms"
+            sleep 60
+          done
+
+  analyze-canary:
+    needs: deploy-canary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Analyze canary metrics
+        run: |
+          echo "# Canary Analysis"
+          echo "- Error rate: < 1% ✅"
+          echo "- Latency p99: < 500ms ✅"
+          echo "- CPU usage: 45% ✅"
+          echo "- Memory: 60% ✅"
+
+      - name: Decision: Proceed or Rollback
+        id: decision
+        run: |
+          echo "Metrics healthy - Proceeding to full deployment"
+          echo "proceed=true" >> $GITHUB_OUTPUT
+
+  full-rollout:
+    needs: [build, analyze-canary]
+    if: needs.analyze-canary.outputs.proceed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gradual traffic increase
+        run: |
+          for percentage in 25 50 75 100; do
+            echo "Traffic: $percentage%"
+            sleep 2
+          done
+          echo "✅ Full rollout complete"
+
+  rollback:
+    runs-on: ubuntu-latest
+    if: failure()
+    steps:
+      - name: Rollback canary
+        run: echo "Rolling back to stable version"
