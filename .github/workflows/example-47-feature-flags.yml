@@ -1,0 +1,98 @@
+name: Example 47 - Feature Flags & A/B Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      feature:
+        description: 'Feature to toggle'
+        required: true
+        type: choice
+        options:
+          - dark-mode
+          - new-ui
+          - beta-api
+          - analytics-v2
+
+jobs:
+  feature-flag-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Update feature flags
+        run: |
+          cat > src/features.json << 'JSON'
+          {
+            "dark-mode": {
+              "enabled": true,
+              "percentage": 50,
+              "users": ["user1", "user2"]
+            },
+            "new-ui": {
+              "enabled": true,
+              "percentage": 10
+            },
+            "beta-api": {
+              "enabled": false,
+              "percentage": 0
+            },
+            "analytics-v2": {
+              "enabled": true,
+              "percentage": 100
+            }
+          }
+          JSON
+
+      - name: Build with feature flags
+        run: npm run build -- --features features.json
+
+      - name: Run A/B tests
+        run: |
+          echo "Testing dark-mode (50% users)"
+          echo "Testing new-ui (10% users)"
+          echo "Testing analytics-v2 (100% users)"
+
+      - name: Deploy with flags
+        run: npm run deploy
+
+      - name: Monitor feature metrics
+        run: |
+          echo "# Feature Flag Metrics"
+          echo "- dark-mode: 50% enabled, 2.5% error rate"
+          echo "- new-ui: 10% enabled, 1.2% error rate"
+          echo "- analytics-v2: 100% enabled, 0.8% error rate"
+
+  a-b-test-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Analyze A/B test results
+        run: |
+          echo "# A/B Test Results"
+          echo "## dark-mode"
+          echo "- Control: 4.2s avg load time"
+          echo "- Variant: 3.8s avg load time (9.5% improvement)"
+          echo "- Users: 10,000"
+          echo "- Confidence: 95%"
+
+      - name: Feature rollout decision
+        run: |
+          echo "Decision: Proceed with dark-mode full rollout"
+
+  feature-cleanup:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Archive old flags
+        run: |
+          echo "Archiving feature flags"
+          echo "Cleanup complete"
