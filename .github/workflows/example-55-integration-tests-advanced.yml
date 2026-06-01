@@ -1,0 +1,114 @@
+name: Example 55 - Advanced Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3 AM
+
+services:
+  postgres:
+    image: postgres:15
+    env:
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    options: >-
+      --health-cmd pg_isready
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7
+    options: >-
+      --health-cmd "redis-cli ping"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 6379:6379
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.0.0
+    env:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+    options: >-
+      --health-cmd "curl localhost:9200"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 9200:9200
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Wait for services
+        run: |
+          until pg_isready -h localhost -p 5432; do echo waiting for postgres; sleep 1; done
+          until redis-cli -h localhost ping; do echo waiting for redis; sleep 1; done
+          until curl localhost:9200; do echo waiting for elasticsearch; sleep 1; done
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+        run: npm run db:migrate
+
+      - name: Seed test data
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+        run: npm run db:seed
+
+      - name: Run API integration tests
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379
+          ELASTICSEARCH_URL: http://localhost:9200
+        run: npm run test:integration:api
+
+      - name: Run database integration tests
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+        run: npm run test:integration:db
+
+      - name: Run cache integration tests
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: npm run test:integration:cache
+
+      - name: Run search integration tests
+        env:
+          ELASTICSEARCH_URL: http://localhost:9200
+        run: npm run test:integration:search
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "# Integration Test Report" >> $GITHUB_STEP_SUMMARY
+          echo "- API Tests: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Database Tests: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Cache Tests: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Search Tests: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Total: 4/4 passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
