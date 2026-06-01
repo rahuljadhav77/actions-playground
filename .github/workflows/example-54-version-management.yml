@@ -1,0 +1,98 @@
+name: Example 54 - Semantic Versioning & Release Management
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      bump-type:
+        description: 'Version bump type'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+
+jobs:
+  determine-version:
+    runs-on: ubuntu-latest
+    outputs:
+      current-version: ${{ steps.version.outputs.current }}
+      new-version: ${{ steps.version.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: version
+        run: |
+          CURRENT=$(cat package.json | grep '"version"' | head -1 | awk -F: '{ print $2 }' | sed 's/[",]//g' | tr -d ' ')
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+          echo "Current version: $CURRENT"
+
+      - name: Calculate new version
+        id: bump
+        run: |
+          CURRENT=${{ steps.version.outputs.current }}
+          BUMP_TYPE="${{ github.event.inputs.bump-type || 'patch' }}"
+          
+          IFS='.' read -ra PARTS <<< "$CURRENT"
+          MAJOR=${PARTS[0]}
+          MINOR=${PARTS[1]}
+          PATCH=${PARTS[2]}
+          
+          case $BUMP_TYPE in
+            major) ((MAJOR++)); MINOR=0; PATCH=0 ;;
+            minor) ((MINOR++)); PATCH=0 ;;
+            patch) ((PATCH++)) ;;
+          esac
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+  create-release:
+    needs: determine-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update version in files
+        run: |
+          echo "Updating version to ${{ needs.determine-version.outputs.new-version }}"
+          sed -i "s/${{ needs.determine-version.outputs.current-version }}/${{ needs.determine-version.outputs.new-version }}/g" package.json
+
+      - name: Create git tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a v${{ needs.determine-version.outputs.new-version }} -m "Release ${{ needs.determine-version.outputs.new-version }}"
+
+      - name: Create changelog entry
+        run: |
+          echo "# Version ${{ needs.determine-version.outputs.new-version }}" >> CHANGELOG.md
+          echo "- Date: $(date)" >> CHANGELOG.md
+          echo "- Changes: New features and improvements" >> CHANGELOG.md
+
+      - name: Commit and push
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -m "chore: Release ${{ needs.determine-version.outputs.new-version }}"
+          git push origin main
+          git push origin v${{ needs.determine-version.outputs.new-version }}
+
+  publish-release:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        run: echo "GitHub Release v${{ needs.determine-version.outputs.new-version }} created"
+
+      - name: Post version summary
+        run: |
+          echo "# Version Release" >> $GITHUB_STEP_SUMMARY
+          echo "- Previous: ${{ needs.determine-version.outputs.current-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- New: ${{ needs.determine-version.outputs.new-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: Released" >> $GITHUB_STEP_SUMMARY
