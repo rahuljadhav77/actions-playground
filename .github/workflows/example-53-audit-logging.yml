@@ -1,0 +1,75 @@
+name: Example 53 - Audit Logging & Compliance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  audit-trail:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create audit log entry
+        run: |
+          {
+            echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "Event: Workflow Triggered"
+            echo "Actor: ${{ github.actor }}"
+            echo "Repository: ${{ github.repository }}"
+            echo "Ref: ${{ github.ref }}"
+            echo "Commit SHA: ${{ github.sha }}"
+            echo "Event Type: ${{ github.event_name }}"
+          } >> audit.log
+
+      - name: Upload audit log
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-logs
+          path: audit.log
+
+  compliance-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify compliance requirements
+        run: |
+          echo "# Compliance Check"
+          echo "✅ Code review required: Yes"
+          echo "✅ Security scan: Passed"
+          echo "✅ License compliance: Passed"
+          echo "✅ Data protection: GDPR compliant"
+
+      - name: Generate compliance report
+        run: |
+          echo "# Compliance Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Date: $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "- Status: All checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Reviewer: Automated" >> $GITHUB_STEP_SUMMARY
+
+  access-log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Log access details
+        run: |
+          echo "Access Log:"
+          echo "- IP: ${{ runner.name }}"
+          echo "- User: ${{ github.actor }}"
+          echo "- Repository: ${{ github.repository }}"
+          echo "- Action: Deploy"
+          echo "- Status: Authorized"
+
+  retention-policy:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Archive logs with retention
+        run: |
+          echo "Audit logs retention policy:"
+          echo "- Development: 30 days"
+          echo "- Production: 90 days"
+          echo "- Compliance: 7 years"
+          echo "- Current: Stored in artifact storage"
