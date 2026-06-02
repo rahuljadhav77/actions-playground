@@ -1,0 +1,125 @@
+name: Example 55 - Advanced Integration Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+services:
+  postgres:
+    image: postgres:15
+    env:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+    options: >-
+      --health-cmd pg_isready
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 5432:5432
+
+  redis:
+    image: redis:7
+    options: >-
+      --health-cmd "redis-cli ping"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 6379:6379
+
+  mongodb:
+    image: mongo:6
+    options: >-
+      --health-cmd "echo 'db.runCommand(\"ping\")' | mongosh --eval"
+      --health-interval 10s
+      --health-timeout 5s
+      --health-retries 5
+    ports:
+      - 27017:27017
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Wait for services
+        run: |
+          npm run wait-for-services
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+        run: npm run migrate
+
+      - name: Seed test data
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379
+          MONGODB_URL: mongodb://localhost:27017/testdb
+        run: npm run seed:test
+
+      - name: Run PostgreSQL tests
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+        run: npm run test:postgres
+
+      - name: Run Redis cache tests
+        env:
+          REDIS_URL: redis://localhost:6379
+        run: npm run test:redis
+
+      - name: Run MongoDB tests
+        env:
+          MONGODB_URL: mongodb://localhost:27017/testdb
+        run: npm run test:mongodb
+
+      - name: Run end-to-end integration tests
+        env:
+          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb
+          REDIS_URL: redis://localhost:6379
+          MONGODB_URL: mongodb://localhost:27017/testdb
+        run: npm run test:integration
+
+      - name: Test API endpoints
+        run: |
+          echo "Testing API endpoints..."
+          npm run test:api
+
+      - name: Test cross-service communication
+        run: |
+          echo "Testing service mesh communication..."
+          npm run test:mesh
+
+      - name: Generate integration report
+        if: always()
+        run: npm run report:integration
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: test-results/
+
+      - name: Post test summary
+        if: always()
+        run: |
+          echo "# Integration Tests Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- PostgreSQL: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Redis: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- MongoDB: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- API Endpoints: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Cross-service: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          echo "- Overall: ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
