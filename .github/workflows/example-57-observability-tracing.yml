@@ -1,0 +1,86 @@
+name: Example 57 - Observability & Distributed Tracing
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  setup-monitoring:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure OpenTelemetry
+        run: |
+          echo "Configuring distributed tracing..."
+          echo "Jaeger collector: https://jaeger.example.com"
+          echo "Prometheus endpoint: https://prometheus.example.com"
+          echo "Grafana dashboard: https://grafana.example.com"
+
+      - name: Enable APM
+        run: |
+          echo "Application Performance Monitoring: Enabled"
+          echo "Trace sampling: 100%"
+          echo "Metrics collection: Active"
+
+  collect-metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Instrument application
+        run: |
+          echo "Instrumenting code with OpenTelemetry..."
+          npm run instrument
+
+      - name: Collect baseline metrics
+        run: |
+          echo "# Baseline Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "- Response time p50: 45ms" >> $GITHUB_STEP_SUMMARY
+          echo "- Response time p99: 250ms" >> $GITHUB_STEP_SUMMARY
+          echo "- Error rate: 0.2%" >> $GITHUB_STEP_SUMMARY
+          echo "- Throughput: 5K req/sec" >> $GITHUB_STEP_SUMMARY
+
+  trace-requests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enable request tracing
+        run: |
+          echo "Trace ID: $(uuidgen)"
+          echo "Parent Span ID: $(uuidgen)"
+          echo "Span ID: $(uuidgen)"
+
+      - name: Monitor trace spans
+        run: |
+          echo "Span: request_received (1ms)"
+          echo "Span: auth_check (5ms)"
+          echo "Span: db_query (150ms)"
+          echo "Span: cache_lookup (2ms)"
+          echo "Span: response_serialize (8ms)"
+          echo "Total: 166ms"
+
+  log-aggregation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ship logs to ELK stack
+        run: |
+          echo "Logs aggregated:"
+          echo "- Application logs: 10K entries/min"
+          echo "- Error logs: 5 entries/min"
+          echo "- Debug logs: 1K entries/min"
+
+      - name: Create log visualization
+        run: |
+          echo "# Log Aggregation Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Logs shipped: Success" >> $GITHUB_STEP_SUMMARY
+          echo "- Kibana dashboard: Available" >> $GITHUB_STEP_SUMMARY
+          echo "- Alerting: Enabled" >> $GITHUB_STEP_SUMMARY
