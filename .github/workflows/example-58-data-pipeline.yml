@@ -1,0 +1,120 @@
+name: Example 58 - Data Pipeline & ETL Workflow
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  extract-data:
+    runs-on: ubuntu-latest
+    outputs:
+      extracted-records: ${{ steps.extract.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pandas requests
+
+      - name: Extract data from source
+        id: extract
+        run: |
+          echo "Extracting data from API..."
+          echo "Records extracted: 50000"
+          echo "count=50000" >> $GITHUB_OUTPUT
+
+      - name: Validate source data
+        run: |
+          echo "Checking data integrity..."
+          echo "Null values: 2%"
+          echo "Duplicates: 0.1%"
+
+      - name: Upload raw data
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-data
+          path: data/raw/
+
+  transform-data:
+    needs: extract-data
+    runs-on: ubuntu-latest
+    outputs:
+      transformed-records: ${{ steps.transform.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Download raw data
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-data
+
+      - name: Data transformation
+        id: transform
+        run: |
+          echo "Transforming data..."
+          echo "Cleaning: 50000 records"
+          echo "Deduplicating: 50 records removed"
+          echo "Final count: 49950"
+          echo "count=49950" >> $GITHUB_OUTPUT
+
+      - name: Data validation
+        run: |
+          echo "Schema validation: ✅ Passed"
+          echo "Type checking: ✅ Passed"
+          echo "Business rules: ✅ Passed"
+
+      - name: Upload transformed data
+        uses: actions/upload-artifact@v4
+        with:
+          name: transformed-data
+          path: data/transformed/
+
+  load-data:
+    needs: transform-data
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Download transformed data
+        uses: actions/download-artifact@v4
+        with:
+          name: transformed-data
+
+      - name: Load to data warehouse
+        run: |
+          echo "Loading ${{ needs.transform-data.outputs.transformed-records }} records to Snowflake..."
+          echo "Batch size: 10000"
+          echo "Batches: 5"
+          echo "Load status: ✅ Complete"
+
+      - name: Verify data load
+        run: |
+          echo "Row count verification: ✅ Matched"
+          echo "Checksum verification: ✅ Matched"
+          echo "Data quality: ✅ Passed"
+
+  generate-report:
+    runs-on: ubuntu-latest
+    needs: [extract-data, transform-data, load-data]
+    if: always()
+    steps:
+      - name: Generate ETL report
+        run: |
+          echo "# ETL Pipeline Report" >> $GITHUB_STEP_SUMMARY
+          echo "- Extracted: ${{ needs.extract-data.outputs.extracted-records }} records" >> $GITHUB_STEP_SUMMARY
+          echo "- Transformed: ${{ needs.transform-data.outputs.transformed-records }} records" >> $GITHUB_STEP_SUMMARY
+          echo "- Loaded: Success" >> $GITHUB_STEP_SUMMARY
+          echo "- Duration: 15 minutes" >> $GITHUB_STEP_SUMMARY
