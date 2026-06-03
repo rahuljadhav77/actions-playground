@@ -1,8 +1,8 @@
 # GitHub Actions Playground
 
-A comprehensive learning repository with **50 GitHub Actions workflow examples** covering everything from beginner basics to enterprise-grade CI/CD patterns.
+A comprehensive learning repository with **59 GitHub Actions workflow examples** covering everything from beginner basics to advanced data pipelines, ML, and observability patterns.
 
-## 📚 Learning Path: 50 Examples
+## 📚 Learning Path: 59 Examples
 
 ### Basics (Examples 1-10)
 Fundamental GitHub Actions concepts and core features.
@@ -66,8 +66,8 @@ Enterprise features, security, and advanced deployment strategies.
 | 43 | Backup & DR | Database backups and disaster recovery |
 | 44 | Approval Workflows | Advanced approval and permission management |
 
-### Enterprise (Examples 45-50)
-Production-grade deployment and operational patterns.
+### Enterprise & Advanced (Examples 45-59)
+Production-grade deployment, operational patterns, and advanced technologies.
 
 | # | Name | Description |
 |---|------|-------------|
@@ -82,6 +82,10 @@ Production-grade deployment and operational patterns.
 | 53 | Audit Logging & Compliance | Compliance tracking and audit trails |
 | 54 | Semantic Versioning | Automated version management and releases |
 | 55 | Advanced Integration Tests | Multi-service integration testing |
+| 56 | Container Orchestration | Kubernetes deployment and management |
+| 57 | Observability & Tracing | OpenTelemetry, Jaeger, distributed tracing |
+| 58 | Data Pipeline & ETL | Extract, transform, load workflows |
+| 59 | ML Model Training | Hyperparameter tuning and model deployment |
 
 ## 🚀 Quick Start
 
@@ -103,13 +107,17 @@ Browse workflows in `.github/workflows/example-*.yml`
 - ✅ Cost optimization
 - ✅ Advanced deployment strategies (blue-green, canary, feature flags)
 - ✅ Incident response and disaster recovery
+- ✅ Kubernetes & container orchestration
+- ✅ Observability & distributed tracing
+- ✅ Data pipelines & ETL workflows
+- ✅ Machine learning model training & deployment
 
 ## 📊 Workflow Statistics
 
-**Total Examples:** 55
-**Workflow Files:** 45
-**Lines of Code:** ~10,000+
-**Patterns Covered:** 55+
+**Total Examples:** 59
+**Workflow Files:** 52
+**Lines of Code:** ~12,000+
+**Patterns Covered:** 59+
 
 ## 🔧 Common Use Cases
 
@@ -126,7 +134,8 @@ Browse workflows in `.github/workflows/example-*.yml`
 1. Start with examples 1-10 to understand basics
 2. Progress to examples 11-30 for intermediate patterns
 3. Study examples 31-44 for enterprise features
-4. Review examples 45-50 for production deployment strategies
+4. Review examples 45-55 for production deployment strategies
+5. Explore examples 56-59 for advanced technologies (K8s, observability, ML, data pipelines)
 
 Each workflow is standalone and can be studied independently.
 
