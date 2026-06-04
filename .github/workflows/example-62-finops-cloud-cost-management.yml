@@ -1,0 +1,117 @@
+name: Example 62 - FinOps & Cloud Cost Management
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly
+
+jobs:
+  analyze-cloud-costs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch cloud billing data
+        run: |
+          echo "Fetching AWS billing data..."
+          echo "EC2 instances: \$2,450/month"
+          echo "RDS databases: \$1,200/month"
+          echo "S3 storage: \$350/month"
+          echo "Lambda: \$500/month"
+          echo "Other services: \$800/month"
+          echo "Total: \$5,300/month"
+
+      - name: Identify cost anomalies
+        run: |
+          echo "Cost anomaly detection:"
+          echo "- EC2 spike: +15% vs last month"
+          echo "- RDS increased usage"
+          echo "- Unused resources detected: 3 instances"
+
+      - name: Generate cost report
+        run: |
+          echo "Monthly cost breakdown:"
+          echo "- Compute: 48%"
+          echo "- Database: 23%"
+          echo "- Storage: 7%"
+          echo "- Networking: 12%"
+          echo "- Other: 10%"
+
+  optimize-resources:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rightsize instances
+        run: |
+          echo "Instance rightsizing recommendations:"
+          echo "1. t3.large → t3.medium (Save \$200/month)"
+          echo "2. Remove unused i3.xlarge (Save \$400/month)"
+          echo "3. Scale down dev environment (Save \$150/month)"
+          echo "Total potential savings: \$750/month"
+
+      - name: Optimize storage
+        run: |
+          echo "Storage optimization:"
+          echo "- Move cold data to Glacier: \$100/month savings"
+          echo "- Delete unused snapshots: \$50/month savings"
+          echo "- Enable S3 intelligent-tiering: \$75/month savings"
+
+      - name: Reserved instances analysis
+        run: |
+          echo "Reserved instance opportunities:"
+          echo "- EC2 RI: 40% discount available"
+          echo "- RDS RI: 35% discount available"
+          echo "- Savings: \$1,500/year per service"
+
+  monitor-spending:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set spending alerts
+        run: |
+          echo "Budget alerts configured:"
+          echo "- Monthly budget: \$5,500"
+          echo "- Alert at 80%: \$4,400"
+          echo "- Alert at 90%: \$4,950"
+          echo "- Emails: team@example.com"
+
+      - name: Track cost trends
+        run: |
+          echo "3-month cost trends:"
+          echo "- Month 1: \$5,100"
+          echo "- Month 2: \$5,200"
+          echo "- Month 3: \$5,300"
+          echo "- Trend: +2% month-over-month"
+
+  implement-cost-controls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy cost governance policies
+        run: |
+          echo "Cost control policies:"
+          echo "- Instance type restrictions: Enabled"
+          echo "- Tagging requirements: Enforced"
+          echo "- Approval workflow: Active"
+          echo "- Cost allocation tags: Mandatory"
+
+      - name: Schedule resource cleanup
+        run: |
+          echo "Resource lifecycle management:"
+          echo "- Auto-shutdown dev environments: 6 PM"
+          echo "- Delete unattached volumes: Weekly"
+          echo "- Archive old snapshots: Monthly"
+
+  generate-finops-report:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create FinOps dashboard update
+        run: |
+          echo "# FinOps Report" >> $GITHUB_STEP_SUMMARY
+          echo "## Current Spend" >> $GITHUB_STEP_SUMMARY
+          echo "- Monthly: \$5,300" >> $GITHUB_STEP_SUMMARY
+          echo "- YTD: \$63,600" >> $GITHUB_STEP_SUMMARY
+          echo "## Optimization Opportunities" >> $GITHUB_STEP_SUMMARY
+          echo "- Rightsize instances: \$750/month" >> $GITHUB_STEP_SUMMARY
+          echo "- Reserved instances: \$1,500/year" >> $GITHUB_STEP_SUMMARY
+          echo "- Storage optimization: \$225/month" >> $GITHUB_STEP_SUMMARY
+          echo "- Total potential savings: \$3,195/month" >> $GITHUB_STEP_SUMMARY
