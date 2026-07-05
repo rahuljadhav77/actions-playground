@@ -3,8 +3,8 @@ name: Example 59 - ML Model Training & Deployment
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly
+#   schedule:
+#     - cron: '0 0 * * 0'  # Weekly
 
 jobs:
   prepare-data:

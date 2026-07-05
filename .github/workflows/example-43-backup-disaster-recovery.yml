@@ -1,8 +1,8 @@
 name: Example 43 - Backup & Disaster Recovery
 
 on:
-  schedule:
-    - cron: '0 2 * * 0'  # Weekly backup
+#   schedule:
+#     - cron: '0 2 * * 0'  # Weekly backup
   workflow_dispatch:
 
 jobs:

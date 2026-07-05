@@ -3,8 +3,8 @@ name: Example 42 - Monitoring & Workflow Logging
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '*/30 * * * *'
+#   schedule:
+#     - cron: '*/30 * * * *'
 
 jobs:
   workflow-monitoring:

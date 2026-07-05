@@ -3,8 +3,8 @@ name: Example 48 - Cost Optimization & Resource Monitoring
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 9 * * 1'  # Weekly on Monday
+#   schedule:
+#     - cron: '0 9 * * 1'  # Weekly on Monday
 
 jobs:
   cost-analysis:
