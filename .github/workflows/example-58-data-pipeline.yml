@@ -3,8 +3,8 @@ name: Example 58 - Data Pipeline & ETL Workflow
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: '0 2 * * *'
+#   schedule:
+#     - cron: '0 2 * * *'
 
 jobs:
   extract-data:

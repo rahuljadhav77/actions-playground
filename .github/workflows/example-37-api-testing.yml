@@ -8,8 +8,8 @@ on:
       - 'tests/api/**'
   pull_request:
     branches: [main, develop]
-  schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+#   schedule:
+#     - cron: '0 */6 * * *'  # Every 6 hours
 
 jobs:
   api-tests:

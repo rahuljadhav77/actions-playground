@@ -6,8 +6,8 @@ on:
     tags: ['v*']
   pull_request:
     branches: [main, develop]
-  schedule:
-    - cron: '0 0 * * *'  # Daily security scan
+#   schedule:
+#     - cron: '0 0 * * *'  # Daily security scan
   workflow_dispatch:
 
 concurrency:

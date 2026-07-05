@@ -4,8 +4,8 @@ on:
   push:
     branches: [main, develop]
   pull_request:
-  schedule:
-    - cron: '0 3 * * *'  # Daily at 3 AM
+#   schedule:
+#     - cron: '0 3 * * *'  # Daily at 3 AM
 
 services:
   postgres:
